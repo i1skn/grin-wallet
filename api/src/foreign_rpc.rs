@@ -392,8 +392,15 @@ pub fn run_doctest_foreign(
 			>;
 	let lc = wallet1.lc_provider().unwrap();
 	let _ = lc.set_top_level_directory(&format!("{}/wallet1", test_dir));
-	lc.create_wallet(None, Some(rec_phrase_1), 32, empty_string.clone(), false)
-		.unwrap();
+	lc.create_wallet(
+		None,
+		Some(rec_phrase_1),
+		32,
+		empty_string.clone(),
+		false,
+		false,
+	)
+	.unwrap();
 	let mask1 = lc
 		.open_wallet(None, empty_string.clone(), use_token, true)
 		.unwrap();
@@ -427,8 +434,15 @@ pub fn run_doctest_foreign(
 			>;
 	let lc = wallet2.lc_provider().unwrap();
 	let _ = lc.set_top_level_directory(&format!("{}/wallet2", test_dir));
-	lc.create_wallet(None, Some(rec_phrase_2), 32, empty_string.clone(), false)
-		.unwrap();
+	lc.create_wallet(
+		None,
+		Some(rec_phrase_2),
+		32,
+		empty_string.clone(),
+		false,
+		false,
+	)
+	.unwrap();
 	let mask2 = lc.open_wallet(None, empty_string, use_token, true).unwrap();
 	let wallet2 = Arc::new(Mutex::new(wallet2));
 

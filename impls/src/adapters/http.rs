@@ -39,7 +39,7 @@ pub struct HttpSlateSender {
 
 impl HttpSlateSender {
 	/// Create, return Err if scheme is not "http"
-	fn new(base_url: &str) -> Result<HttpSlateSender, SchemeNotHttp> {
+	pub fn new(base_url: &str) -> Result<HttpSlateSender, SchemeNotHttp> {
 		if !base_url.starts_with("http") && !base_url.starts_with("https") {
 			Err(SchemeNotHttp)
 		} else {
@@ -70,30 +70,30 @@ impl HttpSlateSender {
 	/// launch TOR process
 	pub fn launch_tor(&mut self) -> Result<(), Error> {
 		// set up tor send process if needed
-		let mut tor = tor_process::TorProcess::new();
-		if self.use_socks && self.process.is_none() {
-			let tor_dir = format!(
-				"{}{}{}",
-				&self.tor_config_dir, MAIN_SEPARATOR, TOR_CONFIG_PATH
-			);
-			info!(
-				"Starting TOR Process for send at {:?}",
-				self.socks_proxy_addr
-			);
-			tor_config::output_tor_sender_config(
-				&tor_dir,
-				&self.socks_proxy_addr.unwrap().to_string(),
-			)
-			.map_err(|e| ErrorKind::TorConfig(format!("{:?}", e)))?;
-			// Start TOR process
-			tor.torrc_path(&format!("{}/torrc", &tor_dir))
-				.working_dir(&tor_dir)
-				.timeout(20)
-				.completion_percent(100)
-				.launch()
-				.map_err(|e| ErrorKind::TorProcess(format!("{:?}", e)))?;
-			self.process = Some(Arc::new(tor));
-		}
+		// let mut tor = tor_process::TorProcess::new();
+		// if self.use_socks && self.process.is_none() {
+		// let tor_dir = format!(
+		// "{}{}{}",
+		// &self.tor_config_dir, MAIN_SEPARATOR, TOR_CONFIG_PATH
+		// );
+		// info!(
+		// "Starting TOR Process for send at {:?}",
+		// self.socks_proxy_addr
+		// );
+		// tor_config::output_tor_sender_config(
+		// &tor_dir,
+		// &self.socks_proxy_addr.unwrap().to_string(),
+		// )
+		// .map_err(|e| ErrorKind::TorConfig(format!("{:?}", e)))?;
+		// // Start TOR process
+		// tor.torrc_path(&format!("{}/torrc", &tor_dir))
+		// .working_dir(&tor_dir)
+		// .timeout(20)
+		// .completion_percent(100)
+		// .launch()
+		// .map_err(|e| ErrorKind::TorProcess(format!("{:?}", e)))?;
+		// self.process = Some(Arc::new(tor));
+		// }
 		Ok(())
 	}
 

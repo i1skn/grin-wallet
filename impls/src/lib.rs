@@ -50,6 +50,7 @@ pub use crate::adapters::{
 pub use crate::backends::{wallet_db_exists, LMDBBackend};
 pub use crate::error::{Error, ErrorKind};
 pub use crate::lifecycle::DefaultLCProvider;
+pub use crate::lifecycle::WalletSeed;
 pub use crate::node_clients::HTTPNodeClient;
 
 use crate::keychain::{ExtKeychain, Keychain};

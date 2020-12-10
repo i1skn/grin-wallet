@@ -37,6 +37,7 @@ use crate::{Error, ErrorKind};
 use ed25519_dalek::PublicKey as DalekPublicKey;
 use ed25519_dalek::SecretKey as DalekSecretKey;
 use ed25519_dalek::Verifier;
+use std::cmp;
 
 use std::convert::{TryFrom, TryInto};
 use std::sync::mpsc::Sender;
@@ -944,6 +945,7 @@ pub fn scan<'a, L, C, K>(
 	wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
 	keychain_mask: Option<&SecretKey>,
 	start_height: Option<u64>,
+	end_height: Option<u64>,
 	delete_unconfirmed: bool,
 	status_send_channel: &Option<Sender<StatusMessage>>,
 ) -> Result<(), Error>
@@ -953,6 +955,7 @@ where
 	K: Keychain + 'a,
 {
 	update_outputs(wallet_inst.clone(), keychain_mask, true)?;
+
 	let tip = {
 		wallet_lock!(wallet_inst, w);
 		w.w2n_client().get_chain_tip()?
@@ -963,12 +966,22 @@ where
 		None => 1,
 	};
 
+	let end_height = match end_height {
+		Some(h) => cmp::min(tip.0, h),
+		None => tip.0,
+	};
+
+	let pmmr_range = {
+		wallet_lock!(wallet_inst, w);
+		w.w2n_client()
+			.height_range_to_pmmr_indices(start_height, Some(end_height))?
+	};
+
 	let mut info = scan::scan(
 		wallet_inst.clone(),
 		keychain_mask,
 		delete_unconfirmed,
-		start_height,
-		tip.0,
+		pmmr_range,
 		status_send_channel,
 	)?;
 	info.hash = tip.1;
@@ -1119,12 +1132,17 @@ where
 		}
 	}
 
+	let pmmr_range = {
+		wallet_lock!(wallet_inst, w);
+		w.w2n_client()
+			.height_range_to_pmmr_indices(start_index, Some(last_scanned_block.height))?
+	};
+
 	let mut info = scan::scan(
 		wallet_inst.clone(),
 		keychain_mask,
 		false,
-		start_index,
-		tip.0,
+		pmmr_range,
 		status_send_channel,
 	)?;
 

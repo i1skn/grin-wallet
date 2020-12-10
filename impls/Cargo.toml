@@ -27,7 +27,7 @@ lazy_static = "1.4"
 
 #http client (copied from grin)
 http = "0.2"
-hyper-rustls = "0.20"
+hyper-rustls = { version = "0.21", features = ["tokio-runtime", "webpki-roots"], default-features = false }
 hyper-timeout = "0.3"
 
 #Socks/Tor

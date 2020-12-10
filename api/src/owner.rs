@@ -1237,6 +1237,7 @@ where
 		&self,
 		keychain_mask: Option<&SecretKey>,
 		start_height: Option<u64>,
+		end_height: Option<u64>,
 		delete_unconfirmed: bool,
 	) -> Result<(), Error> {
 		let tx = {
@@ -1247,6 +1248,7 @@ where
 			self.wallet_inst.clone(),
 			keychain_mask,
 			start_height,
+			end_height,
 			delete_unconfirmed,
 			&tx,
 		)
@@ -1532,6 +1534,7 @@ where
 			mnemonic_length as usize,
 			password,
 			self.doctest_mode,
+			false,
 		)
 	}
 

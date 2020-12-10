@@ -147,49 +147,47 @@ fn collect_chain_outputs<'a, C, K>(
 	client: C,
 	start_index: u64,
 	end_index: Option<u64>,
+	batch_size: u64,
 	status_send_channel: &Option<Sender<StatusMessage>>,
-) -> Result<(Vec<OutputResult>, u64), Error>
+) -> Result<(Vec<OutputResult>, u64, u64), Error>
 where
 	C: NodeClient + 'a,
 	K: Keychain + 'a,
 {
-	let batch_size = 1000;
 	let start_index_stat = start_index;
-	let mut start_index = start_index;
 	let mut result_vec: Vec<OutputResult> = vec![];
-	let last_retrieved_return_index;
-	loop {
-		let (highest_index, last_retrieved_index, outputs) =
-			client.get_outputs_by_pmmr_index(start_index, end_index, batch_size)?;
+	let (highest_index, last_retrieved_index, outputs) =
+		client.get_outputs_by_pmmr_index(start_index, end_index, batch_size)?;
 
-		let range = highest_index as f64 - start_index_stat as f64;
-		let progress = last_retrieved_index as f64 - start_index_stat as f64;
-		let perc_complete = cmp::min(((progress / range) * 100.0) as u8, 99);
+	let range = highest_index as f64 - start_index_stat as f64;
+	let progress = last_retrieved_index as f64 - start_index_stat as f64;
+	let perc_complete = cmp::min(((progress / range) * 100.0) as u8, 99);
 
-		let msg = format!(
-			"Checking {} outputs, up to index {}. (Highest index: {})",
-			outputs.len(),
-			highest_index,
-			last_retrieved_index,
-		);
-		if let Some(ref s) = status_send_channel {
-			let _ = s.send(StatusMessage::Scanning(msg, perc_complete));
-		}
-
-		result_vec.append(&mut identify_utxo_outputs(
-			keychain,
-			outputs.clone(),
-			status_send_channel,
-			perc_complete as u8,
-		)?);
-
-		if highest_index <= last_retrieved_index {
-			last_retrieved_return_index = last_retrieved_index;
-			break;
-		}
-		start_index = last_retrieved_index + 1;
+	let msg = format!(
+		"Checking {} outputs, up to index {}. (Highest index: {})",
+		outputs.len(),
+		highest_index,
+		last_retrieved_index,
+	);
+	if let Some(ref s) = status_send_channel {
+		let _ = s.send(StatusMessage::Scanning(msg, perc_complete));
 	}
-	Ok((result_vec, last_retrieved_return_index))
+
+	result_vec.append(&mut identify_utxo_outputs(
+		keychain,
+		outputs.clone(),
+		status_send_channel,
+		perc_complete as u8,
+	)?);
+	let last_height = outputs.iter().fold(0, |last, output| {
+		let (_, _, _, height, _) = output;
+		if last < *height {
+			*height
+		} else {
+			last
+		}
+	});
+	Ok((result_vec, last_retrieved_index, last_height))
 }
 
 ///
@@ -326,8 +324,7 @@ pub fn scan<'a, L, C, K>(
 	wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
 	keychain_mask: Option<&SecretKey>,
 	delete_unconfirmed: bool,
-	start_height: u64,
-	end_height: u64,
+	pmmr_range: (u64, u64),
 	status_send_channel: &Option<Sender<StatusMessage>>,
 ) -> Result<ScannedBlockInfo, Error>
 where
@@ -344,16 +341,15 @@ where
 		(w.w2n_client().clone(), w.keychain(keychain_mask)?)
 	};
 
-	// Retrieve the actual PMMR index range we're looking for
-	let pmmr_range = client.height_range_to_pmmr_indices(start_height, Some(end_height))?;
-
-	let (chain_outs, last_index) = collect_chain_outputs(
+	let (chain_outs, last_index, last_height) = collect_chain_outputs(
 		&keychain,
 		client,
 		pmmr_range.0,
 		Some(pmmr_range.1),
+		1000,
 		status_send_channel,
 	)?;
+	debug!("last_height: {:?}", last_height);
 	let msg = format!(
 		"Identified {} wallet_outputs as belonging to this wallet",
 		chain_outs.len(),
@@ -505,7 +501,7 @@ where
 	}
 
 	Ok(ScannedBlockInfo {
-		height: end_height,
+		height: last_height,
 		hash: "".to_owned(),
 		start_pmmr_index: pmmr_range.0,
 		last_pmmr_index: last_index,

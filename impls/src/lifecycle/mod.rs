@@ -16,3 +16,4 @@ mod default;
 mod seed;
 
 pub use self::default::DefaultLCProvider;
+pub use self::seed::WalletSeed;

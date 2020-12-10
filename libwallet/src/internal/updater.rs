@@ -140,7 +140,7 @@ pub fn refresh_outputs<'a, T: ?Sized, C, K>(
 	keychain_mask: Option<&SecretKey>,
 	parent_key_id: &Identifier,
 	update_all: bool,
-) -> Result<(), Error>
+) -> Result<u64, Error>
 where
 	T: WalletBackend<'a, C, K>,
 	C: NodeClient + 'a,
@@ -148,7 +148,7 @@ where
 {
 	let height = wallet.w2n_client().get_chain_tip()?.0;
 	refresh_output_state(wallet, keychain_mask, height, parent_key_id, update_all)?;
-	Ok(())
+	Ok(height)
 }
 
 /// build a local map of wallet outputs keyed by commit
@@ -363,7 +363,7 @@ where
 
 /// Builds a single api query to retrieve the latest output data from the node.
 /// So we can refresh the local wallet outputs.
-fn refresh_output_state<'a, T: ?Sized, C, K>(
+pub fn refresh_output_state<'a, T: ?Sized, C, K>(
 	wallet: &mut T,
 	keychain_mask: Option<&SecretKey>,
 	height: u64,

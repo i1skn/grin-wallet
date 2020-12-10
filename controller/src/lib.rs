@@ -37,3 +37,5 @@ pub mod display;
 mod error;
 
 pub use crate::error::{Error, ErrorKind};
+pub use controller::init_tor_listener;
+pub use controller::ForeignAPIHandlerV2;

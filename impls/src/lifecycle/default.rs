@@ -172,6 +172,7 @@ where
 		mnemonic_length: usize,
 		password: ZeroingString,
 		test_mode: bool,
+		init_no_scanning: bool,
 	) -> Result<(), Error> {
 		let mut data_dir_name = PathBuf::from(self.data_dir.clone());
 		data_dir_name.push(GRIN_WALLET_DIR);
@@ -206,7 +207,13 @@ where
 		// Save init status of this wallet, to determine whether it needs a full UTXO scan
 		let mut batch = wallet.batch_no_mask()?;
 		match mnemonic {
-			Some(_) => batch.save_init_status(WalletInitStatus::InitNeedsScanning)?,
+			Some(_) => {
+				if init_no_scanning {
+					batch.save_init_status(WalletInitStatus::InitNoScanning)?;
+				} else {
+					batch.save_init_status(WalletInitStatus::InitNeedsScanning)?;
+				}
+			}
 			None => batch.save_init_status(WalletInitStatus::InitNoScanning)?,
 		};
 		batch.commit()?;

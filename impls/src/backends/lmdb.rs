@@ -484,7 +484,7 @@ where
 		);
 		let status = match batch.get_ser(&init_status_key)? {
 			Some(s) => s,
-			None => WalletInitStatus::InitComplete,
+			None => WalletInitStatus::InitNoScanning,
 		};
 		Ok(status)
 	}
